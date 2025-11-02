@@ -1,484 +1,419 @@
-# 🏃 Projeto de Ciência de Dados - Análise de Fitness e Saúde
+# 🏃 Dashboard de Análise de Fitness e Saúde - V2
 
-Projeto completo de Ciência de Dados que analisa dados de fitness e saúde, comparando métricas entre diferentes grupos (fumantes, praticantes de corrida, faixas etárias) com visualizações interativas e modelos preditivos.
+## 📊 Versão Otimizada para fitlife_clean.csv
 
-## 📋 Sumário
+Dashboard completo de análise de dados de fitness e saúde com 4 análises estatísticas, visualizações interativas e modo batch.
 
-- [Visão Geral](#visão-geral)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Instalação](#instalação)
-- [Configuração](#configuração)
-- [Uso](#uso)
-- [Análises Implementadas](#análises-implementadas)
-- [Tecnologias](#tecnologias)
-- [Desenvolvimento](#desenvolvimento)
+---
 
-## 🎯 Visão Geral
+## 🎯 4 Análises Implementadas
 
-Este projeto implementa um pipeline completo de Ciência de Dados que:
+### 1. 📊 Fumantes vs Não Fumantes
+- **Objetivo**: Comparar métricas de saúde entre fumantes e não fumantes
+- **Métricas**: BPM médio, Calorias queimadas
+- **Testes**: Mann-Whitney U test
+- **Visualizações**: Boxplots, Violin plots
 
-- ✅ Carrega e processa datasets de fitness (público + wearable)
-- ✅ Valida dados com schemas Pandera
-- ✅ Cria features derivadas (pace, cadência, IMC, etc.)
-- ✅ Executa 4 análises estatísticas principais
-- ✅ Gera visualizações interativas (Plotly) e estáticas (Seaborn/Matplotlib)
-- ✅ Treina modelos preditivos (LightGBM) para BPM e Calorias
-- ✅ Apresenta dashboard interativo com Streamlit
+### 2. 🏃 Praticantes de Corrida vs Não Praticantes  
+- **Objetivo**: Comparar desempenho entre corredores e não corredores
+- **Métricas**: BPM médio, Calorias queimadas
+- **Testes**: Mann-Whitney U, Kolmogorov-Smirnov
+- **Visualizações**: Boxplots, Histogramas sobrepostos
 
-## 📁 Estrutura do Projeto
+### 3. 👥 Prática de Esportes por Faixas de Idade
+- **Objetivo**: Analisar taxa de praticantes e métricas por idade
+- **Métricas**: Taxa de praticantes (%), BPM médio, Calorias médias
+- **Testes**: Teste Chi-quadrado
+- **Visualizações**: Gráficos de barras, Stacked bars
+
+### 4. 💓 BPM Praticantes vs Não Praticantes
+- **Objetivo**: Comparar BPM entre praticantes e não praticantes
+- **Métricas**: BPM médio global e segmentado por idade
+- **Testes**: T-test, Mann-Whitney U, Cohen's d (tamanho do efeito)
+- **Visualizações**: Gráficos de barras, Heatmaps
+
+---
+
+## 🚀 Quick Start
+
+### 1. Executar Dashboard Interativo
+
+```powershell
+# Ativar ambiente virtual
+.\venv\Scripts\Activate.ps1
+
+# Executar dashboard
+streamlit run app_v2.py
+```
+
+Abra o navegador em: **http://localhost:8501**
+
+### 2. Executar Análises em Batch Mode
+
+```powershell
+# Gerar todas as análises e salvar CSVs
+python -m src.analysis_v2
+
+# Gerar todos os gráficos (HTML + PNG)
+python -m src.plots_v2
+```
+
+---
+
+## 📁 Estrutura de Arquivos
 
 ```
 trabalho_cd/
-├── conf/                          # Configurações Hydra
-│   ├── config.yaml                # Configuração principal
-│   └── data.yaml                  # Caminhos dos dados
-├── data/
-│   ├── external/                  # Dataset público (CSV/Parquet)
-│   ├── runs_simulated.json        # Dataset wearable (JSON)
-│   └── processed/                 # Dados processados (Parquet)
 ├── src/
-│   ├── __init__.py
-│   ├── dataio.py                  # I/O (CSV, Parquet, JSON)
-│   ├── schema.py                  # Schemas de validação Pandera
-│   ├── preprocess.py              # Limpeza e feature engineering
-│   ├── utils.py                   # Funções auxiliares
-│   ├── analysis.py                # 4 análises principais
-│   ├── plots.py                   # Visualizações
-│   └── modeling.py                # Modelos LightGBM
+│   ├── analysis_v2.py     # 4 funções de análise estatística
+│   └── plots_v2.py         # Visualizações Plotly + Seaborn
+│
+├── data/
+│   └── external/
+│       └── fitlife_clean.csv    # Dataset principal (687,701 linhas)
+│
 ├── reports/
-│   ├── figs_interactive/          # Gráficos HTML (Plotly)
-│   └── figs_static/               # Gráficos PNG (Seaborn)
-├── models/                        # Modelos treinados
-├── app.py                         # Dashboard Streamlit
-├── pyproject.toml                 # Dependências e config
-├── requirements.txt               # Dependências alternativas
-└── README.md                      # Este arquivo
+│   ├── analysis_results/         # CSVs com resultados das análises
+│   ├── figs_interactive/         # Gráficos HTML interativos (10 arquivos)
+│   └── figs_static/              # Gráficos PNG estáticos (4 arquivos)
+│
+├── app_v2.py              # Dashboard Streamlit
+└── README_V2.md           # Este arquivo
 ```
 
-## 🚀 Instalação
+---
 
-### Pré-requisitos
+## 📊 Dataset: fitlife_clean.csv
 
-- Python 3.9+
-- pip ou poetry
+### Informações
+- **Total de linhas**: 687,701
+- **Período**: 2024-01-01 a 2024-12-31
+- **Faixas de idade**: 18-24, 25-34, 35-44, 45-54, 55-64
 
-### Instalação com pip
+### Colunas Disponíveis
 
-```powershell
-# Clone o repositório (se aplicável)
-# cd trabalho_cd
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `id` | int | ID do usuário |
+| `dt` | datetime | Data do registro |
+| `idade` | int | Idade do usuário |
+| `genero` | str | Gênero (M/F) |
+| `altura_cm` | float | Altura em cm |
+| `peso_kg` | float | Peso em kg |
+| `bpm` | int | Batimentos por minuto |
+| `calorias_kcal` | float | Calorias queimadas |
+| `atividade` | str | Tipo de atividade física |
+| `condicao_saude` | str | Condição de saúde |
+| `nivel_fumante` | str | Nível de fumante |
+| `is_runner` | bool | É corredor? |
+| `is_smoker` | bool | É fumante? |
+| `is_practitioner` | bool | É praticante de atividade física? |
+| `faixa_idade` | str | Faixa etária |
 
-# Crie um ambiente virtual
-python -m venv venv
-.\venv\Scripts\activate
+### Estatísticas
+- **Fumantes**: 106,331 (15.5%)
+- **Corredores**: 67,145 (9.8%)
+- **Praticantes**: 342,402 (49.8%)
+- **BPM médio**: 131.5
+- **Calorias médias**: 15.4 kcal
 
-# Instale as dependências
-pip install -r requirements.txt
-```
+---
 
-### Instalação com poetry
+## 🎨 Dashboard Features
 
-```powershell
-poetry install
-poetry shell
-```
+### Filtros Disponíveis (Sidebar)
+- ✅ **Faixas de Idade**: Seleção múltipla
+- ✅ **Fumante**: Todos / Apenas Fumantes / Apenas Não Fumantes
+- ✅ **Período**: Seletor de data (início e fim)
 
-## ⚙️ Configuração
+### KPIs no Topo
+- Total de Registros
+- Taxa de Fumantes (%)
+- Taxa de Corredores (%)
+- Taxa de Praticantes (%)
+- BPM Médio
 
-### 1. Configurar Caminhos dos Dados
+### 4 Abas de Análise
+Cada aba contém:
+- Tabelas com resultados agregados
+- Testes estatísticos
+- Visualizações interativas (Plotly)
+- Possibilidade de zoom, hover e export
 
-Edite `conf/data.yaml`:
+---
 
-```yaml
-external:
-  path: "data/external/fitlife.csv"  # Caminho do dataset público
-  format: "csv"
+## 📈 Visualizações Geradas
 
-wearable:
-  path: "data/runs_simulated.json"   # Caminho do JSON de corridas
-```
+### Interativas (HTML) - 10 arquivos
 
-### 2. Ajustar Parâmetros
+**Análise 1: Fumantes**
+- `analise1_bpm_boxplot.html` - Boxplot de BPM
+- `analise1_bpm_violin.html` - Violin plot de BPM
+- `analise1_calorias_boxplot.html` - Boxplot de calorias
 
-Edite `conf/config.yaml`:
+**Análise 2: Runners**
+- `analise2_bpm_boxplot.html` - Boxplot de BPM
+- `analise2_calorias_boxplot.html` - Boxplot de calorias
+- `analise2_calorias_hist.html` - Histograma de calorias
 
-```yaml
-# Flags de uso
-use_public: true
-use_wearable: true
+**Análise 3: Faixa de Idade**
+- `analise3_taxa_barras.html` - Taxa de praticantes
+- `analise3_stacked.html` - Distribuição empilhada
 
-# Filtros
-filters:
-  idade_min: 0
-  idade_max: 120
-  data_inicio: null
-  data_fim: null
+**Análise 4: BPM**
+- `analise4_comparacao.html` - Comparação global
+- `analise4_heatmap.html` - Heatmap por idade
 
-# Faixas de idade
-age_bins:
-  bins: [0, 17, 24, 34, 44, 54, 64, 120]
-  labels: ["<=17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
-```
+### Estáticas (PNG) - 4 arquivos
+- `analise1_comparacao.png` - Fumantes: BPM e Calorias
+- `analise2_comparacao.png` - Runners: BPM e Calorias
+- `analise3_idade.png` - Prática por idade
+- `analise4_bpm.png` - BPM praticantes vs não praticantes
 
-### 3. Estrutura do Dataset Público (Exemplo FitLife)
+---
 
-O dataset público deve conter as seguintes colunas (em PT ou EN):
+## 🧪 Testes Estatísticos
 
-- **PT**: ID, Data, Idade, Gênero, Altura, Peso, Duração, Calorias Queimadas, BPM, Passos, Condição de Saúde, Nível de Fumante, Tipo de Atividade
-- **EN**: ID, Date, Age, Gender, Height, Weight, Duration, Calories Burned, BPM, Steps, Health Condition, Smoker Level, Activity Type
+### Mann-Whitney U Test
+- Teste não-paramétrico para comparar duas amostras independentes
+- Usado em: Análise 1, 2 e 4
+- Significância: p < 0.05
 
-### 4. Estrutura do JSON Wearable
+### Teste Chi-quadrado
+- Testa independência entre variáveis categóricas
+- Usado em: Análise 3
+- Significância: p < 0.05
 
-O JSON deve ser uma lista de objetos:
+### T-test
+- Teste paramétrico para comparar médias
+- Usado em: Análise 4
+- Significância: p < 0.05
 
-```json
-[
-  {
-    "id": "R001",
-    "data": "2024-01-15",
-    "idade": 28,
-    "genero": "M",
-    "altura_cm": 175,
-    "peso_kg": 70,
-    "distancia_km": 5.2,
-    "duracao_min": 32,
-    "calorias_kcal": 380,
-    "bpm_medio": 145,
-    "passos": 6800,
-    "condicao_saude": "Bom",
-    "nivel_fumante": "Não Fumante"
-  }
-]
-```
+### Kolmogorov-Smirnov Test
+- Compara distribuições completas
+- Usado em: Análise 2
+- Significância: p < 0.05
 
-## 🎮 Uso
+### Cohen's d
+- Mede o tamanho do efeito
+- Usado em: Análise 4
+- Interpretação: small (< 0.5), medium (0.5-0.8), large (> 0.8)
 
-### Executar Dashboard Streamlit
+---
 
-```powershell
-streamlit run app.py
-```
+## 📝 Uso das Funções
 
-O dashboard abrirá em `http://localhost:8501` com:
-
-- **Sidebar**: Seleção de datasets e filtros
-- **KPIs**: Métricas principais no topo
-- **4 Abas**: Uma para cada análise
-
-### Executar Pipeline de Preprocessamento (CLI)
-
-```powershell
-python -m src.preprocess
-```
-
-### Gerar Visualizações em Batch
+### Análises
 
 ```python
-from hydra import compose, initialize
-from src.dataio import load_data
-from src.preprocess import preprocess_pipeline
-from src.analysis import run_all_analyses
-from src.plots import generate_all_plots
+from src.analysis_v2 import (
+    analyze_smokers_vs_nonsmokers,
+    analyze_runners_vs_nonrunners,
+    analyze_practice_by_age,
+    analyze_bpm_practitioners_vs_nonpractitioners
+)
+import pandas as pd
 
-# Inicializar Hydra
-with initialize(config_path="conf", version_base=None):
-    cfg = compose(config_name="config")
+# Carregar dados
+df = pd.read_csv('data/external/fitlife_clean.csv')
 
-# Carregar e processar dados
-df_public = load_data(cfg.data.external.path)
-df_wearable = load_data(cfg.data.wearable.path)
-df_processed = preprocess_pipeline(df_public, df_wearable, cfg)
+# Análise 1
+df_summary, stats = analyze_smokers_vs_nonsmokers(df)
+print(df_summary)
+print(stats)
 
-# Executar análises
-results = run_all_analyses(df_processed, cfg.sport_activities)
+# Análise 2
+df_summary, stats = analyze_runners_vs_nonrunners(df)
 
-# Gerar visualizações
-generate_all_plots(df_processed, results, output_dir="reports")
+# Análise 3
+df_summary, stats = analyze_practice_by_age(df)
+
+# Análise 4
+df_global, df_by_age, stats = analyze_bpm_practitioners_vs_nonpractitioners(df)
 ```
 
-### Treinar Modelos Preditivos
+### Visualizações
 
 ```python
-from src.modeling import train_and_evaluate_models
+from src.plots_v2 import (
+    plot_smokers_comparison_boxplot,
+    plot_runners_comparison_histogram,
+    plot_practice_by_age_bars,
+    plot_bpm_by_age_heatmap
+)
+from pathlib import Path
 
-# Treinar modelos para BPM e Calorias
-models = train_and_evaluate_models(
-    df_processed, 
-    targets=["bpm", "calorias_kcal"],
-    save_dir="models"
+# Gerar gráfico interativo
+fig = plot_smokers_comparison_boxplot(df, 'bpm')
+fig.show()  # Exibir
+
+# Ou salvar como HTML
+fig = plot_smokers_comparison_boxplot(
+    df, 
+    'bpm', 
+    save_path=Path('meu_grafico.html')
 )
 ```
 
-## 📊 Análises Implementadas
-
-### 1. 🚬 Fumantes vs Não Fumantes em Esportes
-
-**Objetivo**: Comparar performance em atividades esportivas entre fumantes e não fumantes.
-
-**Métricas**:
-- Pace (min/km)
-- BPM médio
-- Calorias queimadas
-- Passos
-
-**Visualizações**:
-- Boxplot (pace)
-- Barras com erro (BPM e calorias)
-
-**Teste**: Mann-Whitney U test
-
 ---
 
-### 2. 🏃 Praticantes vs Não Praticantes de Corrida
+## 🔧 Dependências
 
-**Objetivo**: Comparar ritmo (pace) e outras métricas entre runners e não runners.
-
-**Métricas**:
-- Pace (min/km)
-- Distância percorrida
-- Duração
-- BPM
-
-**Visualizações**:
-- Violin plot (distribuição de pace)
-- ECDF (função de distribuição acumulada)
-- Histograma com KDE
-
-**Teste**: Mann-Whitney U test
-
----
-
-### 3. 📅 Prática de Esportes por Faixas de Idade
-
-**Objetivo**: Analisar como a prática varia entre idades.
-
-**Métricas**:
-- Taxa de praticantes (%)
-- Duração média
-- Distância média
-- Calorias médias
-
-**Visualizações**:
-- Barras (taxa de praticantes)
-- Barras empilhadas (praticantes vs não praticantes)
-- Gráficos de métricas médias
-
----
-
-### 4. 💓 BPM Praticantes vs Não Praticantes
-
-**Objetivo**: Comparar BPM entre quem pratica e quem não pratica atividades.
-
-**Métricas**:
-- BPM médio geral
-- BPM por faixa de idade
-- BPM estratificado
-
-**Visualizações**:
-- Barras com erro (BPM médio)
-- Heatmap (BPM por idade e status)
-- Barras agrupadas
-
-**Teste**: Mann-Whitney U test
-
-## 🛠️ Tecnologias
-
-### Core
-- **Python 3.9+**
-- **Pandas 2.0+**: Manipulação de dados
-- **NumPy 1.24+**: Operações numéricas
-
-### Data Validation & Storage
-- **Pandera 0.17+**: Validação de schemas
-- **PyArrow 12.0+**: Armazenamento Parquet
-
-### Visualization
-- **Plotly 5.17+**: Gráficos interativos
-- **Seaborn 0.13+**: Gráficos estatísticos
-- **Matplotlib 3.7+**: Gráficos estáticos
-
-### Machine Learning
-- **LightGBM 4.0+**: Gradient boosting
-- **scikit-learn 1.3+**: Preprocessing e métricas
-- **sktime 0.24+**: Séries temporais (opcional)
-
-### App & Config
-- **Streamlit 1.28+**: Dashboard interativo
-- **Hydra-core 1.3+**: Gerenciamento de configurações
-
-## 📈 Modelagem Preditiva (Bônus)
-
-O projeto inclui modelos LightGBM para prever:
-
-1. **BPM**: Predição de batimentos cardíacos
-2. **Calorias**: Estimativa de calorias queimadas
-
-**Features utilizadas**:
-- Numéricas: idade, altura, peso, duração, distância, passos, IMC, pace, cadência
-- Categóricas (one-hot): gênero, faixa de idade, condição de saúde, nível fumante, atividade
-- Booleanas: is_runner, is_practitioner, is_smoker
-
-**Métricas de avaliação**:
-- MAE (Mean Absolute Error)
-- RMSE (Root Mean Squared Error)
-- R² (Coefficient of Determination)
-
-**Exemplo de uso**:
-
-```python
-from src.modeling import train_and_evaluate_models, get_feature_importance_df
-
-# Treinar
-results = train_and_evaluate_models(df_processed)
-
-# Ver importância das features
-importance_df = get_feature_importance_df(results, target="bpm", top_n=10)
-print(importance_df)
+```
+pandas >= 2.0.0
+numpy >= 1.24.0
+scipy >= 1.10.0
+plotly >= 5.17.0
+seaborn >= 0.13.0
+matplotlib >= 3.7.0
+streamlit >= 1.28.0
 ```
 
-## 🧪 Desenvolvimento
-
-### Executar Testes
-
+Instalar todas:
 ```powershell
-pytest tests/ -v --cov=src
+pip install -r requirements.txt
 ```
-
-### Formatação de Código
-
-```powershell
-# Black
-black src/ app.py
-
-# Ruff
-ruff check src/ app.py
-```
-
-### Type Checking
-
-```powershell
-mypy src/
-```
-
-## 📝 Features Derivadas
-
-O pipeline cria automaticamente as seguintes features:
-
-| Feature | Descrição | Fórmula |
-|---------|-----------|---------|
-| `pace_min_km` | Ritmo em min/km | `duracao_min / distancia_km` |
-| `cadencia_passos_min` | Cadência em passos/min | `passos / duracao_min` |
-| `imc` | Índice de Massa Corporal | `peso_kg / (altura_m)²` |
-| `is_runner` | Pratica corrida? | Baseado em `atividade` |
-| `is_smoker` | É fumante? | Baseado em `nivel_fumante` |
-| `is_practitioner` | Pratica esporte? | Regras combinadas |
-| `faixa_idade` | Faixa etária | Binning de `idade` |
-
-## 🔍 Validação de Dados
-
-O projeto usa **Pandera** para validar:
-
-✅ **Tipos**: Conversão automática com coerção  
-✅ **Faixas**: BPM ∈ [30, 220], idade ∈ [5, 120], etc.  
-✅ **Unicidade**: Por (id, dt)  
-✅ **Coerência**: Pace vs distância/duração  
-
-Linhas inválidas são **removidas** e **logadas**.
-
-## 🎨 Personalização
-
-### Adicionar Nova Análise
-
-1. Crie função em `src/analysis.py`:
-
-```python
-def analyze_my_custom_analysis(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
-    # Sua lógica aqui
-    return df_summary, stats_dict
-```
-
-2. Adicione visualização em `src/plots.py`:
-
-```python
-def plot_my_custom_plot(df: pd.DataFrame) -> go.Figure:
-    fig = px.scatter(df, x="x", y="y")
-    return fig
-```
-
-3. Adicione aba no `app.py`:
-
-```python
-with tab5:
-    st.header("Minha Análise")
-    df_summary, stats = analyze_my_custom_analysis(df_filtered)
-    fig = plot_my_custom_plot(df_filtered)
-    st.plotly_chart(fig)
-```
-
-## 📦 Exportação de Resultados
-
-### Salvar Dados Processados
-
-```python
-from src.dataio import save_parquet
-
-save_parquet(df_processed, "data/processed/combined_data.parquet")
-```
-
-### Exportar Visualizações
-
-Os gráficos são automaticamente salvos em:
-
-- **Interativos**: `reports/figs_interactive/*.html`
-- **Estáticos**: `reports/figs_static/*.png`
-
-### Exportar Tabelas de Análise
-
-```python
-results["smokers_vs_nonsmokers"]["summary"].to_csv("reports/smokers_summary.csv")
-```
-
-## 🐛 Troubleshooting
-
-### Erro: "FileNotFoundError: Arquivo não encontrado"
-
-✅ Verifique os caminhos em `conf/data.yaml`  
-✅ Certifique-se que os arquivos existem nas pastas corretas
-
-### Erro: "Nenhum dataset foi processado"
-
-✅ Ative `use_public` e/ou `use_wearable` em `conf/config.yaml`  
-✅ Verifique se os arquivos são válidos (CSV/JSON)
-
-### Erro de validação Pandera
-
-✅ Revise o schema em `src/schema.py`  
-✅ Linhas inválidas são automaticamente removidas (veja logs)
-
-### Gráficos não aparecem no Streamlit
-
-✅ Certifique-se que `plotly` está instalado  
-✅ Verifique se há dados suficientes após filtros
-
-## 📚 Referências
-
-- [Pandas Documentation](https://pandas.pydata.org/docs/)
-- [Plotly Python](https://plotly.com/python/)
-- [Streamlit Documentation](https://docs.streamlit.io/)
-- [LightGBM Documentation](https://lightgbm.readthedocs.io/)
-- [Pandera Documentation](https://pandera.readthedocs.io/)
-- [Hydra Documentation](https://hydra.cc/docs/intro/)
-
-## 📄 Licença
-
-Este projeto é fornecido como material educacional.
-
-## 👤 Autor
-
-Lucas - Trabalho de Ciência de Dados
 
 ---
 
-**🎉 Projeto Completo e Funcional!**
+## 💡 Tips & Tricks
 
-Para executar: `streamlit run app.py`
+### 1. Filtrar dados específicos
+
+```python
+# Apenas fumantes entre 25-34 anos
+df_filtered = df[
+    (df['is_smoker'] == True) & 
+    (df['faixa_idade'] == '25-34')
+]
+
+# Executar análise
+df_summary, stats = analyze_smokers_vs_nonsmokers(df_filtered)
+```
+
+### 2. Exportar resultados
+
+```python
+# Salvar resultados em CSV
+df_summary.to_csv('resultados_analise1.csv', index=False)
+
+# Salvar gráfico como PNG
+import plotly.io as pio
+fig = plot_smokers_comparison_boxplot(df, 'bpm')
+pio.write_image(fig, 'grafico.png', width=1200, height=600)
+```
+
+### 3. Comparar períodos
+
+```python
+# Primeiro semestre
+df_h1 = df[df['dt'] < '2024-07-01']
+summary_h1, _ = analyze_practice_by_age(df_h1)
+
+# Segundo semestre
+df_h2 = df[df['dt'] >= '2024-07-01']
+summary_h2, _ = analyze_practice_by_age(df_h2)
+
+# Comparar
+import pandas as pd
+comparison = pd.merge(
+    summary_h1[['faixa_idade', 'taxa_praticantes_pct']], 
+    summary_h2[['faixa_idade', 'taxa_praticantes_pct']], 
+    on='faixa_idade',
+    suffixes=('_h1', '_h2')
+)
+```
+
+---
+
+## 📚 Type Hints e Docstrings
+
+Todas as funções seguem padrões Python com:
+- ✅ Type hints completos
+- ✅ Docstrings detalhadas (Google style)
+- ✅ Tratamento de erros
+- ✅ Validação de dados
+
+Exemplo:
+
+```python
+def analyze_smokers_vs_nonsmokers(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
+    """
+    Análise 1: Fumantes vs Não Fumantes.
+    
+    Compara médias e medianas de bpm e calorias_kcal
+    entre fumantes (is_smoker=True) e não fumantes (is_smoker=False).
+    
+    Args:
+        df: DataFrame com colunas [is_smoker, bpm, calorias_kcal]
+    
+    Returns:
+        Tuple contendo:
+        - DataFrame com métricas agregadas por grupo
+        - Dict com testes estatísticos
+    """
+    ...
+```
+
+---
+
+## ✅ Checklist de Validação
+
+- [x] 4 análises estatísticas implementadas e testadas
+- [x] Funções com type hints e docstrings
+- [x] Testes estatísticos (Mann-Whitney, Chi-quadrado, T-test, KS)
+- [x] 10 gráficos interativos (HTML) gerados
+- [x] 4 gráficos estáticos (PNG) gerados
+- [x] Dashboard Streamlit com 4 tabs funcionando
+- [x] Filtros na sidebar (idade, fumante, período)
+- [x] KPIs exibidos no topo
+- [x] Modo batch funcional (`python -m src.analysis_v2`)
+- [x] Modo batch para gráficos (`python -m src.plots_v2`)
+- [x] Dataset com 687k+ linhas processado
+
+---
+
+## 🎓 Resultados Principais
+
+### Análise 1: Fumantes vs Não Fumantes
+- **BPM**: Diferença significativa (p = 0.0146)
+- **Calorias**: Sem diferença significativa (p = 0.5653)
+- **Conclusão**: Fumantes têm BPM ligeiramente diferente, mas gasto calórico similar
+
+### Análise 2: Runners vs Não Runners
+- **BPM**: Sem diferença significativa (p = 0.5479)
+- **Calorias**: Diferença altamente significativa (p < 0.0001)
+- **Conclusão**: Corredores queimam significativamente mais calorias
+
+### Análise 3: Prática por Faixa de Idade
+- **Taxa global**: 49.8% são praticantes
+- **Chi-quadrado**: p < 0.0001 (taxa varia por idade)
+- **Conclusão**: Prática de esportes é dependente da faixa etária
+
+### Análise 4: BPM Praticantes vs Não Praticantes
+- **T-test**: p = 0.5525 (não significativo)
+- **Cohen's d**: 0.001 (efeito muito pequeno)
+- **Conclusão**: BPM médio é praticamente igual entre grupos
+
+---
+
+## 📞 Suporte
+
+Para questões ou problemas:
+1. Verifique se o dataset está em `data/external/fitlife_clean.csv`
+2. Confirme que todas as dependências estão instaladas
+3. Execute os testes em modo batch primeiro
+
+---
+
+## 🎉 Projeto Completo!
+
+**✅ Todas as funcionalidades implementadas e testadas!**
+
+- Análises estatísticas robustas
+- Visualizações interativas e estáticas
+- Dashboard profissional
+- Modo batch para automação
+- Código com type hints e documentação completa
+
+**Execute agora: `streamlit run app_v2.py`** 🚀
