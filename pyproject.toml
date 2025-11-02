@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trabalho-cd"
+version = "0.1.0"
+description = "Projeto de Ciência de Dados - Análise de Fitness e Saúde"
+authors = [
+    {name = "Lucas", email = "lucas@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas>=2.0.0",
+    "pyarrow>=12.0.0",
+    "pandera>=0.17.0",
+    "numpy>=1.24.0",
+    "sktime>=0.24.0",
+    "lightgbm>=4.0.0",
+    "scikit-learn>=1.3.0",
+    "plotly>=5.17.0",
+    "seaborn>=0.13.0",
+    "matplotlib>=3.7.0",
+    "streamlit>=1.28.0",
+    "hydra-core>=1.3.0",
+    "omegaconf>=2.3.0",
+    "kaleido>=0.2.1",  # Para exportar plotly como imagens
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ipython>=8.12.0",
+    "jupyter>=1.0.0",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=src --cov-report=html --cov-report=term-missing"

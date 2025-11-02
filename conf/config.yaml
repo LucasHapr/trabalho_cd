@@ -1,0 +1,123 @@
+# Configuração principal do projeto
+defaults:
+  - data
+  - _self_
+
+# Flags de uso
+use_public: true
+use_wearable: true
+
+# Filtros padrão
+filters:
+  idade_min: 0
+  idade_max: 120
+  data_inicio: null  # formato: YYYY-MM-DD
+  data_fim: null
+  apenas_fumantes: null  # true/false/null (todos)
+  apenas_praticantes: null  # true/false/null (todos)
+
+# Colunas padronizadas (schema comum)
+columns:
+  standard:
+    - id
+    - dt
+    - idade
+    - genero
+    - altura_cm
+    - peso_kg
+    - duracao_min
+    - distancia_km
+    - calorias_kcal
+    - bpm
+    - passos
+    - condicao_saude
+    - nivel_fumante
+    - atividade
+  
+  derived:
+    - pace_min_km
+    - cadencia_passos_min
+    - is_runner
+    - is_practitioner
+    - is_smoker
+    - faixa_idade
+    - imc
+
+# Mapeamento de colunas (dataset público FitLife PT)
+mapping:
+  public:
+    ID: id
+    Data: dt
+    Idade: idade
+    Gênero: genero
+    Altura: altura_cm
+    Peso: peso_kg
+    Duração: duracao_min
+    Calorias Queimadas: calorias_kcal
+    BPM: bpm
+    Passos: passos
+    Condição de Saúde: condicao_saude
+    Nível de Fumante: nivel_fumante
+    Tipo de Atividade: atividade
+  
+  wearable:
+    id: id
+    data: dt
+    idade: idade
+    genero: genero
+    altura_cm: altura_cm
+    peso_kg: peso_kg
+    distancia_km: distancia_km
+    duracao_min: duracao_min
+    calorias_kcal: calorias_kcal
+    bpm_medio: bpm
+    passos: passos
+    condicao_saude: condicao_saude
+    nivel_fumante: nivel_fumante
+
+# Binning de idades
+age_bins:
+  bins: [0, 17, 24, 34, 44, 54, 64, 120]
+  labels: ["<=17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
+
+# Definição de atividades físicas
+sport_activities:
+  - Running
+  - Walking
+  - Cycling
+  - Swimming
+  - Jogging
+  - Hiking
+
+# Regras para is_practitioner (fallback)
+practitioner_rules:
+  min_passos: 1000
+  min_duracao_min: 20
+
+# Diretórios de saída
+output:
+  processed_data: "data/processed"
+  reports: "reports"
+  figs_interactive: "reports/figs_interactive"
+  figs_static: "reports/figs_static"
+  models: "models"
+
+# Configurações de visualização
+viz:
+  plotly_template: "plotly_white"
+  seaborn_style: "whitegrid"
+  figure_dpi: 300
+  figure_size: [12, 6]
+
+# Configurações de modelagem
+modeling:
+  target_variable: "bpm"  # ou "calorias_kcal"
+  test_size: 0.2
+  random_state: 42
+  lightgbm:
+    objective: "regression"
+    metric: "rmse"
+    num_leaves: 31
+    learning_rate: 0.05
+    n_estimators: 100
+    early_stopping_rounds: 10
