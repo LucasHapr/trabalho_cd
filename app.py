@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from hydra import compose, initialize_config_dir
 
 # Adicionar src ao path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -30,12 +31,14 @@ from src.plots import (
     plot_bpm_by_age_heatmap,
     plot_bpm_practitioners_comparison,
     plot_practice_by_age_bars,
+    plot_practice_by_age_bars_plotly,
     plot_practice_by_age_stacked,
     plot_runners_comparison_boxplot,
     plot_runners_comparison_histogram,
     plot_smokers_comparison_boxplot,
     plot_smokers_comparison_violin,
 )
+from src.preprocess import preprocess_pipeline
 
 # Configuração da página
 st.set_page_config(
@@ -72,7 +75,7 @@ def load_and_process_data(use_public: bool, use_wearable: bool):
         try:
             public_path = Path(cfg.external.path)
             if public_path.exists():
-                df_public = load_data(public_path)
+                df_public = pd.read_csv(public_path)
             else:
                 st.sidebar.warning(f"Dataset público não encontrado: {public_path}")
         except Exception as e:
@@ -82,7 +85,7 @@ def load_and_process_data(use_public: bool, use_wearable: bool):
         try:
             wearable_path = Path(cfg.wearable.path)
             if wearable_path.exists():
-                df_wearable = load_data(wearable_path)
+                df_wearable = pd.read_json(wearable_path)
             else:
                 st.sidebar.warning(f"Dataset wearable não encontrado: {wearable_path}")
         except Exception as e:
@@ -93,7 +96,8 @@ def load_and_process_data(use_public: bool, use_wearable: bool):
         st.error("Nenhum dataset foi carregado. Verifique os caminhos na configuração.")
         return None
 
-    df_processed = preprocess_pipeline(df_public, df_wearable, cfg, validate=False)
+    with st.spinner('⏳ Processando dados... Isso pode levar alguns segundos.'):
+        df_processed = preprocess_pipeline(df_public, df_wearable, cfg, validate=False)
     
     # Garantir que a coluna dt seja datetime
     if df_processed is not None and 'dt' in df_processed.columns:
@@ -231,31 +235,50 @@ def show_analysis_1(df: pd.DataFrame):
         return
 
     # Análise
-    df_summary, stats_dict = analyze_smokers_vs_nonsmokers(df_sports, sport_activities)
+    with st.spinner('🔍 Analisando dados de fumantes...'):
+        df_summary, stats_dict = analyze_smokers_vs_nonsmokers(df_sports)
+    
+    # Verificar se há fumantes nos dados
+    n_smokers = len(df_sports[df_sports["is_smoker"] == True])
+    n_nonsmokers = len(df_sports[df_sports["is_smoker"] == False])
+    
+    if n_smokers == 0:
+        st.info(f"ℹ️ Dataset atual contém apenas **não fumantes** ({n_nonsmokers:,} registros). Para comparações, use o dataset FitLife (público).")
+    elif n_nonsmokers == 0:
+        st.info(f"ℹ️ Dataset atual contém apenas **fumantes** ({n_smokers:,} registros).")
 
     # Mostrar tabela resumo
     st.subheader("Resumo Estatístico")
-    st.dataframe(df_summary, use_container_width=True)
+    st.dataframe(df_summary, width="stretch")
 
     # Gráficos
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("📈 Resultados")
-        st.dataframe(df_summary, use_container_width=True)
+        st.subheader("Distribuição de Pace (Boxplot)")
+        if "pace_min_km" in df_sports.columns:
+            fig = plot_smokers_comparison_boxplot(df_sports, "pace_min_km")
+            st.plotly_chart(fig, width="stretch", key="smokers_boxplot")
     
     with col2:
-        st.subheader("BPM Médio")
-        if "bpm_mean" in df_summary.columns:
-            fig = plot_smokers_comparison_bars_plotly(df_summary, "bpm")
-            st.plotly_chart(fig, use_container_width=True)
+        st.subheader("BPM (Violin Plot)")
+        if "bpm" in df_sports.columns:
+            fig = plot_smokers_comparison_violin(df_sports, "bpm")
+            st.plotly_chart(fig, width="stretch", key="smokers_violin")
 
     # Testes estatísticos
-    if stats_dict:
+    if stats_dict and 'metrics' in stats_dict:
         st.subheader("Testes Estatísticos (Mann-Whitney U)")
-        stats_df = pd.DataFrame(stats_dict).T
-        stats_df["significant"] = stats_df["significant"].map({True: "Sim", False: "Não"})
-        st.dataframe(stats_df, use_container_width=True)
+        metrics_data = []
+        for metric, values in stats_dict['metrics'].items():
+            metrics_data.append({
+                'Métrica': metric,
+                'Estatística': f"{values['statistic']:.2f}",
+                'P-valor': f"{values['p_value']:.4f}",
+                'Significativo (α=0.05)': "✓ Sim" if values['significant'] else "✗ Não"
+            })
+        stats_df = pd.DataFrame(metrics_data)
+        st.dataframe(stats_df, width="stretch")
 
 
 def show_analysis_2(df: pd.DataFrame):
@@ -275,37 +298,54 @@ def show_analysis_2(df: pd.DataFrame):
     )
 
     # Análise
-    df_summary, stats_dict = analyze_runners_vs_nonrunners(df)
+    with st.spinner('🏃 Analisando dados de corredores...'):
+        df_summary, stats_dict = analyze_runners_vs_nonrunners(df)
 
     if df_summary.empty:
         st.warning("Dados insuficientes para análise de runners.")
         return
+    
+    # Verificar distribuição de runners
+    n_runners = len(df[df["is_runner"] == True])
+    n_non_runners = len(df[df["is_runner"] == False])
+    
+    if n_non_runners == 0:
+        st.info(f"ℹ️ Dataset atual contém apenas **corredores** ({n_runners:,} registros).")
+    elif n_runners == 0:
+        st.info(f"ℹ️ Dataset atual contém apenas **não corredores** ({n_non_runners:,} registros).")
 
     # Mostrar tabela resumo
     st.subheader("Resumo Estatístico")
-    st.dataframe(df_summary, use_container_width=True)
+    st.dataframe(df_summary, width="stretch")
 
     # Gráficos
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Distribuição de Pace (Violin Plot)")
+        st.subheader("Distribuição de Pace (Boxplot)")
         if "pace_min_km" in df.columns:
-            fig = plot_runners_comparison_violin_plotly(df, "pace_min_km")
-            st.plotly_chart(fig, use_container_width=True)
+            fig = plot_runners_comparison_boxplot(df, "pace_min_km")
+            st.plotly_chart(fig, width="stretch", key="runners_boxplot")
 
     with col2:
-        st.subheader("Função de Distribuição Acumulada (ECDF)")
+        st.subheader("Distribuição de Pace (Histograma)")
         if "pace_min_km" in df.columns:
-            fig = plot_runners_comparison_ecdf_plotly(df, "pace_min_km")
-            st.plotly_chart(fig, use_container_width=True)
+            fig = plot_runners_comparison_histogram(df, "pace_min_km")
+            st.plotly_chart(fig, width="stretch", key="runners_histogram")
 
     # Testes estatísticos
-    if stats_dict:
+    if stats_dict and 'metrics' in stats_dict:
         st.subheader("Testes Estatísticos (Mann-Whitney U)")
-        stats_df = pd.DataFrame(stats_dict).T
-        stats_df["significant"] = stats_df["significant"].map({True: "Sim", False: "Não"})
-        st.dataframe(stats_df, use_container_width=True)
+        metrics_data = []
+        for metric, values in stats_dict['metrics'].items():
+            metrics_data.append({
+                'Métrica': metric,
+                'Estatística': f"{values['statistic']:.2f}",
+                'P-valor': f"{values['p_value']:.4f}",
+                'Significativo (α=0.05)': "✓ Sim" if values['significant'] else "✗ Não"
+            })
+        stats_df = pd.DataFrame(metrics_data)
+        st.dataframe(stats_df, width="stretch")
 
 
 def show_analysis_3(df: pd.DataFrame):
@@ -325,7 +365,8 @@ def show_analysis_3(df: pd.DataFrame):
     )
 
     # Análise
-    df_rates, df_metrics = analyze_practice_by_age(df)
+    with st.spinner('📊 Analisando prática por faixa etária...'):
+        df_rates, df_metrics = analyze_practice_by_age(df)
 
     if df_rates.empty:
         st.warning("Dados insuficientes para análise por idade.")
@@ -333,24 +374,25 @@ def show_analysis_3(df: pd.DataFrame):
 
     # Mostrar tabela de taxas
     st.subheader("Taxa de Praticantes por Faixa de Idade")
-    st.dataframe(df_rates, use_container_width=True)
+    st.dataframe(df_rates, width="stretch")
 
     # Gráficos
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("📈 Resultados por Faixa de Idade")
-        st.dataframe(df_summary, use_container_width=True)
+        st.subheader("Taxa de Prática por Idade")
+        fig = plot_practice_by_age_bars_plotly(df_rates)
+        st.plotly_chart(fig, width="stretch", key="practice_bars")
     
     with col2:
         st.subheader("Distribuição: Praticantes vs Não Praticantes")
-        fig = plot_practice_by_age_stacked_plotly(df_rates)
-        st.plotly_chart(fig, use_container_width=True)
+        fig = plot_practice_by_age_stacked(df_rates)
+        st.plotly_chart(fig, width="stretch", key="practice_stacked")
 
     # Métricas médias
     if not df_metrics.empty:
         st.subheader("Métricas Médias por Faixa de Idade (Apenas Praticantes)")
-        st.dataframe(df_metrics, use_container_width=True)
+        st.dataframe(df_metrics, width="stretch")
 
 
 def show_analysis_4(df: pd.DataFrame):
@@ -370,38 +412,57 @@ def show_analysis_4(df: pd.DataFrame):
     )
 
     # Análise
-    df_summary, stats_dict = analyze_bpm_practitioners_vs_nonpractitioners(df)
+    with st.spinner('💓 Analisando BPM de praticantes...'):
+        df_summary, stats_dict = analyze_bpm_practitioners_vs_nonpractitioners(df)
 
     if df_summary.empty:
         st.warning("Dados insuficientes para análise de BPM.")
         return
+    
+    # Verificar distribuição de praticantes
+    n_practitioners = len(df[df["is_practitioner"] == True])
+    n_non_practitioners = len(df[df["is_practitioner"] == False])
+    
+    if n_non_practitioners == 0:
+        st.info(f"ℹ️ Dataset atual contém apenas **praticantes** ({n_practitioners:,} registros). Comparação não disponível.")
+    elif n_practitioners == 0:
+        st.info(f"ℹ️ Dataset atual contém apenas **não praticantes** ({n_non_practitioners:,} registros).")
 
     # Mostrar tabela resumo
     st.subheader("Resumo Estatístico Geral")
-    st.dataframe(df_summary, use_container_width=True)
+    st.dataframe(df_summary, width="stretch")
 
-    # Gráficos
-    col1, col2 = st.columns(2)
+    # Testes estatísticos
+    if stats_dict:
+        st.subheader("Testes Estatísticos")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if 't_test' in stats_dict:
+                st.markdown("**Teste t**")
+                st.metric("Estatística t", f"{stats_dict['t_test']['statistic']:.2f}")
+                st.metric("P-valor", f"{stats_dict['t_test']['p_value']:.4f}")
+                st.metric("Significativo (α=0.05)", "✓ Sim" if stats_dict['t_test']['significant'] else "✗ Não")
+        
+        with col2:
+            if 'mann_whitney' in stats_dict:
+                st.markdown("**Teste Mann-Whitney U**")
+                st.metric("Estatística U", f"{stats_dict['mann_whitney']['statistic']:.2f}")
+                st.metric("P-valor", f"{stats_dict['mann_whitney']['p_value']:.4f}")
+                st.metric("Significativo (α=0.05)", "✓ Sim" if stats_dict['mann_whitney']['significant'] else "✗ Não")
+        
+        # Tamanho do efeito
+        if 'cohens_d' in stats_dict:
+            st.subheader("Tamanho do Efeito (Cohen's d)")
+            col1, col2 = st.columns(2)
+            col1.metric("Cohen's d", f"{stats_dict['cohens_d']:.3f}")
+            col2.metric("Interpretação", stats_dict.get('effect_size', 'N/A'))
 
-    with col1:
-        st.subheader("📈 Comparação Global")
-        st.dataframe(df_global, use_container_width=True)
-    
-    with col2:
-        st.subheader("Heatmap: BPM por Idade e Status")
-        if "by_age" in stats_dict:
-            df_by_age = stats_dict["by_age"]
-            fig = plot_bpm_by_age_heatmap_plotly(df_by_age)
-            st.plotly_chart(fig, use_container_width=True)
-
-    # Teste estatístico
-    if "overall" in stats_dict:
-        st.subheader("Teste Estatístico (Mann-Whitney U)")
-        result = stats_dict["overall"]
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Estatística", f"{result['statistic']:.2f}")
-        col2.metric("P-valor", f"{result['pvalue']:.4f}")
-        col3.metric("Significativo", "Sim" if result["significant"] else "Não")
+    # Gráfico de comparação
+    st.subheader("Comparação Visual de BPM")
+    fig = plot_bpm_practitioners_comparison(df)
+    st.plotly_chart(fig, width="stretch", key="bpm_comparison")
 
 
 def main():

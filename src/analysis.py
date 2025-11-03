@@ -18,6 +18,15 @@ import pandas as pd
 from scipy import stats
 
 
+def _get_calorias_column(df: pd.DataFrame) -> str:
+    """Retorna o nome correto da coluna de calorias."""
+    if 'calorias' in df.columns:
+        return 'calorias'
+    elif 'calorias_kcal' in df.columns:
+        return 'calorias_kcal'
+    return None
+
+
 def analyze_smokers_vs_nonsmokers(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     """
     Análise 1: Fumantes vs Não Fumantes.
@@ -37,7 +46,9 @@ def analyze_smokers_vs_nonsmokers(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]
     df_valid = df[df['is_smoker'].notna()].copy()
     
     # Métricas a analisar (apenas as disponíveis no dataset)
-    metrics = ['bpm', 'calorias_kcal']
+    # Usar 'calorias' se existir, caso contrário 'calorias_kcal'
+    calorias_col = 'calorias' if 'calorias' in df.columns else 'calorias_kcal'
+    metrics = ['bpm', calorias_col]
     
     # Agregar por grupo
     results = []
@@ -105,11 +116,13 @@ def analyze_runners_vs_nonrunners(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]
     
     # Agregar por grupo
     results = []
+    calorias_col = _get_calorias_column(df)
+    
     for is_runner in [True, False]:
         df_group = df_valid[df_valid['is_runner'] == is_runner]
         
         bpm_data = df_group['bpm'].dropna()
-        cal_data = df_group['calorias_kcal'].dropna()
+        cal_data = df_group[calorias_col].dropna() if calorias_col else pd.Series([])
         
         if len(bpm_data) > 0:
             results.append({
@@ -130,7 +143,11 @@ def analyze_runners_vs_nonrunners(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]
     # Testes estatísticos
     stats_dict = {}
     
-    for metric in ['bpm', 'calorias_kcal']:
+    metrics_to_test = ['bpm']
+    if calorias_col:
+        metrics_to_test.append(calorias_col)
+    
+    for metric in metrics_to_test:
         runners_data = df_valid[df_valid['is_runner'] == True][metric].dropna()
         non_runners_data = df_valid[df_valid['is_runner'] == False][metric].dropna()
         
@@ -181,7 +198,7 @@ def analyze_practice_by_age(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
 
     # Taxa de praticantes por faixa
     df_rates = (
-        df.groupby("faixa_idade")
+        df.groupby("faixa_idade", observed=True)
         .agg(
             total=("is_practitioner", "count"),
             praticantes=("is_practitioner", "sum"),
@@ -191,6 +208,9 @@ def analyze_practice_by_age(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     )
 
     df_rates["taxa_praticantes_pct"] = df_rates["taxa_praticantes"] * 100
+    
+    # Filtrar faixas etárias sem dados (total == 0)
+    df_rates = df_rates[df_rates["total"] > 0].copy()
 
     print("\nTaxa de praticantes por faixa de idade:")
     print(df_rates[["faixa_idade", "total", "praticantes", "taxa_praticantes_pct"]])
@@ -199,12 +219,13 @@ def analyze_practice_by_age(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     # Filtrar apenas valores True, ignorando NaN
     df_practitioners = df[df["is_practitioner"] == True].copy()
 
-    metrics = ["duracao_min", "distancia_km", "calorias_kcal", "bpm", "passos", "pace_min_km"]
-    available_metrics = [m for m in metrics if m in df_practitioners.columns]
+    calorias_col = _get_calorias_column(df)
+    metrics = ["duracao_min", "distancia_km", calorias_col, "bpm", "passos", "pace_min_km"]
+    available_metrics = [m for m in metrics if m and m in df_practitioners.columns]
 
     agg_dict = {m: ["mean", "median", "std", "count"] for m in available_metrics}
 
-    df_metrics = df_practitioners.groupby("faixa_idade").agg(agg_dict).reset_index()
+    df_metrics = df_practitioners.groupby("faixa_idade", observed=True).agg(agg_dict).reset_index()
 
     # Flatten multi-level columns
     df_metrics.columns = [
@@ -215,7 +236,7 @@ def analyze_practice_by_age(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     return df_rates, df_metrics
 
 
-def analyze_bpm_practitioners_vs_nonpractitioners(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
+def analyze_bpm_practitioners_vs_nonpractitioners(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     """
     Análise 4: Média de BPM entre Praticantes vs Não Praticantes.
     
@@ -301,7 +322,8 @@ def analyze_bpm_practitioners_vs_nonpractitioners(df: pd.DataFrame) -> Tuple[pd.
             'effect_size': 'small' if abs(cohens_d) < 0.5 else ('medium' if abs(cohens_d) < 0.8 else 'large')
         }
     
-    return df_global, df_by_age, stats_dict
+    print("\n✓ Análise de BPM concluída")
+    return df_summary, stats_dict
 
 
 # Função principal para execução batch

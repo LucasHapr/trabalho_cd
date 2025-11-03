@@ -1,0 +1,77 @@
+# Configuração principal do projeto
+
+defaults:
+  - data
+
+# Flags de controle
+use_public: true
+use_wearable: true
+
+# Mapeamento de colunas do dataset público
+mapping:
+  public:
+    ID: id
+    Date: dt
+    Activity: atividade
+    Age: idade
+    Height_cm: altura_cm
+    Weight_kg: peso_kg
+    Gender: sexo
+    Smoking_Level: nivel_fumante
+    Steps: passos
+    Calories_Burned: calorias
+    Distance_km: distancia_km
+    Duration_min: duracao_min
+    Heart_Rate_bpm: bpm
+
+  wearable:
+    data: dt
+    idade: idade
+    genero: sexo
+    altura_cm: altura_cm
+    peso_kg: peso_kg
+    distancia_km: distancia_km
+    duracao_min: duracao_min
+    calorias_kcal: calorias
+    bpm_medio: bpm
+    passos: passos
+    condicao_saude: condicao_saude
+    nivel_fumante: nivel_fumante
+
+# Filtros de dados
+filters:
+  idade_min: 18
+  idade_max: 100
+  min_age: 18
+  max_age: 100
+  min_bpm: 40
+  max_bpm: 220
+  min_distance: 0
+  max_distance: 100
+  data_inicio: null
+  data_fim: null
+  apenas_fumantes: null
+  apenas_nao_fumantes: null
+  apenas_praticantes: null
+  apenas_nao_praticantes: null
+
+# Bins de idade
+age_bins:
+  bins: [18, 25, 35, 45, 55, 65, 100]
+  labels: ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
+
+# Regras para identificar praticantes
+practitioner_rules:
+  min_passos: 5000
+  min_duracao_min: 20
+
+# Atividades esportivas
+sport_activities:
+  - Running
+  - Walking
+  - Cycling
+  - Swimming
+  - Jogging
+  - Hiking
+  - Yoga
+  - Gym

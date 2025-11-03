@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
 
-from .schema import validate_dataframe
+# from .schema import validate_dataframe  # Arquivo não existe
 from .utils import (
     bin_ages,
     calculate_cadence,
@@ -388,12 +388,13 @@ def preprocess_pipeline(
         df_pub_clean = clean_public_dataset(df_public, cfg)
         df_pub_processed = engineer_features(df_pub_clean, cfg)
 
-        if validate:
-            df_pub_processed, df_pub_invalid = validate_dataframe(
-                df_pub_processed, schema_type="processed", lazy=True
-            )
-            if df_pub_invalid is not None and len(df_pub_invalid) > 0:
-                print(f"⚠️  {len(df_pub_invalid)} linhas inválidas removidas do dataset público")
+        # Validação desabilitada (schema.py não existe)
+        # if validate:
+        #     df_pub_processed, df_pub_invalid = validate_dataframe(
+        #         df_pub_processed, schema_type="processed", lazy=True
+        #     )
+        #     if df_pub_invalid is not None and len(df_pub_invalid) > 0:
+        #         print(f"⚠️  {len(df_pub_invalid)} linhas inválidas removidas do dataset público")
 
         processed_dfs.append(df_pub_processed)
 
@@ -402,12 +403,13 @@ def preprocess_pipeline(
         df_wear_clean = clean_wearable_dataset(df_wearable, cfg)
         df_wear_processed = engineer_features(df_wear_clean, cfg)
 
-        if validate:
-            df_wear_processed, df_wear_invalid = validate_dataframe(
-                df_wear_processed, schema_type="processed", lazy=True
-            )
-            if df_wear_invalid is not None and len(df_wear_invalid) > 0:
-                print(f"⚠️  {len(df_wear_invalid)} linhas inválidas removidas do dataset wearable")
+        # Validação desabilitada (schema.py não existe)
+        # if validate:
+        #     df_wear_processed, df_wear_invalid = validate_dataframe(
+        #         df_wear_processed, schema_type="processed", lazy=True
+        #     )
+        #     if df_wear_invalid is not None and len(df_wear_invalid) > 0:
+        #         print(f"⚠️  {len(df_wear_invalid)} linhas inválidas removidas do dataset wearable")
 
         processed_dfs.append(df_wear_processed)
 

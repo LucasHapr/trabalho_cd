@@ -22,6 +22,9 @@ sns.set_style("whitegrid")
 plt.rcParams['figure.dpi'] = 300
 plt.rcParams['savefig.bbox'] = 'tight'
 
+# Paleta de cores
+COLOR_PALETTE = px.colors.qualitative.Set2
+
 
 # =============================================================================
 # ANÁLISE 1: FUMANTES VS NÃO FUMANTES
@@ -46,20 +49,31 @@ def plot_smokers_comparison_boxplot(
     df_plot = df[df[metric].notna()].copy()
     df_plot['Grupo'] = df_plot['is_smoker'].map({True: 'Fumante', False: 'Não Fumante'})
     
+    # Mapear labels mais descritivos
+    metric_labels = {
+        'bpm': 'BPM (Batimentos por Minuto)',
+        'pace_min_km': 'Pace (min/km)',
+        'calorias_kcal': 'Calorias (kcal)',
+        'calorias': 'Calorias (kcal)',
+        'passos': 'Passos',
+        'distancia_km': 'Distância (km)'
+    }
+    
     fig = px.box(
         df_plot,
         x='Grupo',
         y=metric,
         color='Grupo',
-        title=f'Distribuição de {metric.upper()} - Fumantes vs Não Fumantes',
-        labels={metric: metric.replace('_', ' ').title()},
-        color_discrete_map={'Fumante': '#e74c3c', 'Não Fumante': '#3498db'}
+        title=f'Comparação: {metric_labels.get(metric, metric)}',
+        labels={metric: metric_labels.get(metric, metric), 'Grupo': ''},
+        color_discrete_map={'Fumante': '#e74c3c', 'Não Fumante': '#2ecc71'}
     )
     
     fig.update_layout(
         template='plotly_white',
         showlegend=False,
-        height=500
+        height=500,
+        font=dict(size=12)
     )
     
     if save_path:
@@ -79,21 +93,32 @@ def plot_smokers_comparison_violin(
     df_plot = df[df[metric].notna()].copy()
     df_plot['Grupo'] = df_plot['is_smoker'].map({True: 'Fumante', False: 'Não Fumante'})
     
+    # Mapear labels mais descritivos
+    metric_labels = {
+        'bpm': 'BPM (Batimentos por Minuto)',
+        'pace_min_km': 'Pace (min/km)',
+        'calorias_kcal': 'Calorias (kcal)',
+        'calorias': 'Calorias (kcal)',
+        'passos': 'Passos',
+        'distancia_km': 'Distância (km)'
+    }
+    
     fig = px.violin(
         df_plot,
         x='Grupo',
         y=metric,
         color='Grupo',
         box=True,
-        title=f'Distribuição de {metric.upper()} - Fumantes vs Não Fumantes',
-        labels={metric: metric.replace('_', ' ').title()},
-        color_discrete_map={'Fumante': '#e74c3c', 'Não Fumante': '#3498db'}
+        title=f'Distribuição Detalhada: {metric_labels.get(metric, metric)}',
+        labels={metric: metric_labels.get(metric, metric), 'Grupo': ''},
+        color_discrete_map={'Fumante': '#e74c3c', 'Não Fumante': '#2ecc71'}
     )
     
     fig.update_layout(
         template='plotly_white',
         showlegend=False,
-        height=500
+        height=500,
+        font=dict(size=12)
     )
     
     if save_path:
@@ -148,20 +173,31 @@ def plot_runners_comparison_boxplot(
     df_plot = df[df[metric].notna()].copy()
     df_plot['Grupo'] = df_plot['is_runner'].map({True: 'Corredor', False: 'Não Corredor'})
     
+    # Mapear labels mais descritivos
+    metric_labels = {
+        'bpm': 'BPM (Batimentos por Minuto)',
+        'pace_min_km': 'Pace (min/km)',
+        'calorias_kcal': 'Calorias (kcal)',
+        'calorias': 'Calorias (kcal)',
+        'passos': 'Passos',
+        'distancia_km': 'Distância (km)'
+    }
+    
     fig = px.box(
         df_plot,
         x='Grupo',
         y=metric,
         color='Grupo',
-        title=f'Distribuição de {metric.upper()} - Corredores vs Não Corredores',
-        labels={metric: metric.replace('_', ' ').title()},
-        color_discrete_map={'Corredor': '#2ecc71', 'Não Corredor': '#95a5a6'}
+        title=f'Comparação: {metric_labels.get(metric, metric)}',
+        labels={metric: metric_labels.get(metric, metric), 'Grupo': ''},
+        color_discrete_map={'Corredor': '#3498db', 'Não Corredor': '#95a5a6'}
     )
     
     fig.update_layout(
         template='plotly_white',
         showlegend=False,
-        height=500
+        height=500,
+        font=dict(size=12)
     )
     
     if save_path:
@@ -181,19 +217,33 @@ def plot_runners_comparison_histogram(
     df_plot = df[df[metric].notna()].copy()
     df_plot['Grupo'] = df_plot['is_runner'].map({True: 'Corredor', False: 'Não Corredor'})
     
+    # Mapear labels mais descritivos
+    metric_labels = {
+        'bpm': 'BPM (Batimentos por Minuto)',
+        'pace_min_km': 'Pace (min/km)',
+        'calorias_kcal': 'Calorias (kcal)',
+        'calorias': 'Calorias (kcal)',
+        'passos': 'Passos',
+        'distancia_km': 'Distância (km)'
+    }
+    
     fig = px.histogram(
         df_plot,
         x=metric,
         color='Grupo',
         nbins=50,
-        title=f'Distribuição de {metric.upper()} - Corredores vs Não Corredores',
-        labels={metric: metric.replace('_', ' ').title()},
-        color_discrete_map={'Corredor': '#2ecc71', 'Não Corredor': '#95a5a6'},
+        title=f'Distribuição de Frequência: {metric_labels.get(metric, metric)}',
+        labels={metric: metric_labels.get(metric, metric), 'count': 'Frequência'},
+        color_discrete_map={'Corredor': '#3498db', 'Não Corredor': '#95a5a6'},
         barmode='overlay',
-        opacity=0.7
+        opacity=0.75
     )
 
-    fig.update_layout(height=500)
+    fig.update_layout(
+        template='plotly_white',
+        height=500,
+        font=dict(size=12)
+    )
 
     return fig
 
@@ -256,19 +306,24 @@ def plot_practice_by_age_bars_plotly(df_rates: pd.DataFrame) -> go.Figure:
         go.Bar(
             x=df_rates["faixa_idade"],
             y=taxa_pct,
-            marker_color=COLOR_PALETTE[0],
+            marker_color='#3498db',
             text=text_values,
             textposition="outside",
+            marker=dict(
+                line=dict(color='#2c3e50', width=1)
+            )
         )
     )
 
     fig.update_layout(
+        title='Taxa de Praticantes por Faixa Etária',
+        xaxis_title='Faixa de Idade',
+        yaxis_title='Taxa de Praticantes (%)',
         template='plotly_white',
-        height=500
+        height=500,
+        font=dict(size=12),
+        yaxis=dict(range=[0, max(taxa_pct) * 1.15])  # Adicionar espaço para labels
     )
-    
-    if save_path:
-        fig.write_html(save_path)
     
     return fig
 
@@ -354,20 +409,25 @@ def plot_practice_by_age_stacked(
     Gráfico de barras empilhadas mostrando praticantes vs não praticantes.
     """
     df_plot = df_summary.copy()
-    df_plot['n_nao_praticantes'] = df_plot['n_total'] - df_plot['n_praticantes']
+    
+    # Verificar quais colunas existem (podem ser 'total'/'praticantes' ou 'n_total'/'n_praticantes')
+    total_col = 'n_total' if 'n_total' in df_plot.columns else 'total'
+    prat_col = 'n_praticantes' if 'n_praticantes' in df_plot.columns else 'praticantes'
+    
+    df_plot['nao_praticantes'] = df_plot[total_col] - df_plot[prat_col]
     
     fig = go.Figure()
     
     fig.add_trace(go.Bar(
         x=df_plot['faixa_idade'],
-        y=df_plot['n_praticantes'],
+        y=df_plot[prat_col],
         name='Praticantes',
         marker_color='#2ecc71'
     ))
     
     fig.add_trace(go.Bar(
         x=df_plot['faixa_idade'],
-        y=df_plot['n_nao_praticantes'],
+        y=df_plot['nao_praticantes'],
         name='Não Praticantes',
         marker_color='#e74c3c'
     ))
@@ -380,9 +440,6 @@ def plot_practice_by_age_stacked(
         barmode='stack',
         height=500
     )
-    
-    if save_path:
-        fig.write_html(save_path)
     
     return fig
 
@@ -425,12 +482,36 @@ def plot_practice_by_age_static(
 # =============================================================================
 
 def plot_bpm_practitioners_comparison(
-    df_global: pd.DataFrame,
+    df: pd.DataFrame,
     save_path: Optional[Path] = None
 ) -> go.Figure:
     """
     Gráfico de barras comparando BPM médio entre praticantes e não praticantes.
     """
+    # Criar resumo de dados
+    df_with_bpm = df[df["bpm"].notna()].copy()
+    
+    summary_data = []
+    for is_pract_val in [False, True]:
+        df_group = df_with_bpm[df_with_bpm["is_practitioner"] == is_pract_val]
+        group_name = "Praticante" if is_pract_val else "Não Praticante"
+        bpm_values = df_group["bpm"].dropna()
+        
+        if len(bpm_values) > 0:
+            summary_data.append({
+                "grupo": group_name,
+                "bpm_mean": bpm_values.mean(),
+                "bpm_std": bpm_values.std(),
+            })
+    
+    df_global = pd.DataFrame(summary_data)
+    
+    if df_global.empty:
+        # Retornar figura vazia se não houver dados
+        fig = go.Figure()
+        fig.update_layout(title='Sem dados disponíveis')
+        return fig
+    
     fig = go.Figure()
     
     fig.add_trace(go.Bar(
@@ -439,7 +520,7 @@ def plot_bpm_practitioners_comparison(
         text=df_global['bpm_mean'].round(1),
         texttemplate='%{text}',
         textposition='outside',
-        marker_color=['#f39c12', '#34495e'],
+        marker_color=['#e74c3c', '#2ecc71'],
         error_y=dict(
             type='data',
             array=df_global['bpm_std']
@@ -454,9 +535,6 @@ def plot_bpm_practitioners_comparison(
         showlegend=False,
         height=500
     )
-    
-    if save_path:
-        fig.write_html(save_path)
     
     return fig
 
