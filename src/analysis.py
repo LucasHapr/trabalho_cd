@@ -168,71 +168,51 @@ def analyze_practice_by_age(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
         df: DataFrame com colunas [faixa_idade, is_practitioner, bpm, calorias_kcal]
     
     Returns:
-        Tuple contendo:
-        - DataFrame com métricas por faixa etária
-        - Dict com estatísticas globais e testes
+        Tupla (df_rates, df_metrics) com:
+        - df_rates: Taxa de praticantes por faixa de idade
+        - df_metrics: Métricas médias por faixa de idade
     """
-    # Filtrar linhas válidas
-    df_valid = df[df['faixa_idade'].notna()].copy()
-    
-    # Definir ordem das faixas etárias
-    age_order = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
-    df_valid['faixa_idade'] = pd.Categorical(df_valid['faixa_idade'], categories=age_order, ordered=True)
-    
-    # Agregar por faixa de idade
-    results = []
-    for age_group in age_order:
-        df_group = df_valid[df_valid['faixa_idade'] == age_group]
-        
-        if len(df_group) > 0:
-            n_total = len(df_group)
-            n_practitioners = df_group['is_practitioner'].sum()
-            taxa_practitioner = n_practitioners / n_total * 100
-            
-            bpm_data = df_group['bpm'].dropna()
-            cal_data = df_group['calorias_kcal'].dropna()
-            
-            results.append({
-                'faixa_idade': age_group,
-                'n_total': n_total,
-                'n_praticantes': int(n_practitioners),
-                'taxa_praticantes_pct': taxa_practitioner,
-                'bpm_mean': bpm_data.mean() if len(bpm_data) > 0 else np.nan,
-                'bpm_median': bpm_data.median() if len(bpm_data) > 0 else np.nan,
-                'calorias_mean': cal_data.mean() if len(cal_data) > 0 else np.nan,
-                'calorias_median': cal_data.median() if len(cal_data) > 0 else np.nan
-            })
-    
-    df_summary = pd.DataFrame(results)
-    
-    # Estatísticas globais
-    stats_dict = {
-        'total_pessoas': int(len(df_valid)),
-        'total_praticantes': int(df_valid['is_practitioner'].sum()),
-        'taxa_global_pct': float(df_valid['is_practitioner'].mean() * 100),
-        'bpm_global_mean': float(df_valid['bpm'].mean()),
-        'calorias_global_mean': float(df_valid['calorias_kcal'].mean()),
-        'chi2_test': None  # Teste qui-quadrado para independência
-    }
-    
-    # Teste Chi-quadrado (taxa de praticantes é independente da faixa etária?)
-    if len(df_summary) > 1:
-        contingency_table = df_summary[['n_praticantes']].values.flatten()
-        n_non_practitioners = (df_summary['n_total'] - df_summary['n_praticantes']).values
-        contingency_matrix = np.array([contingency_table, n_non_practitioners])
-        
-        try:
-            chi2, p_val, dof, expected = stats.chi2_contingency(contingency_matrix.T)
-            stats_dict['chi2_test'] = {
-                'statistic': float(chi2),
-                'p_value': float(p_val),
-                'dof': int(dof),
-                'significant': p_val < 0.05
-            }
-        except:
-            pass
-    
-    return df_summary, stats_dict
+    print("\n📊 ANÁLISE 3: Prática de Esportes por Faixas de Idade")
+    print("=" * 60)
+
+    if "faixa_idade" not in df.columns:
+        print("⚠️  Coluna 'faixa_idade' não encontrada")
+        return pd.DataFrame(), pd.DataFrame()
+
+    # Taxa de praticantes por faixa
+    df_rates = (
+        df.groupby("faixa_idade")
+        .agg(
+            total=("is_practitioner", "count"),
+            praticantes=("is_practitioner", "sum"),
+            taxa_praticantes=("is_practitioner", "mean"),
+        )
+        .reset_index()
+    )
+
+    df_rates["taxa_praticantes_pct"] = df_rates["taxa_praticantes"] * 100
+
+    print("\nTaxa de praticantes por faixa de idade:")
+    print(df_rates[["faixa_idade", "total", "praticantes", "taxa_praticantes_pct"]])
+
+    # Métricas médias por faixa (apenas praticantes)
+    # Filtrar apenas valores True, ignorando NaN
+    df_practitioners = df[df["is_practitioner"] == True].copy()
+
+    metrics = ["duracao_min", "distancia_km", "calorias_kcal", "bpm", "passos", "pace_min_km"]
+    available_metrics = [m for m in metrics if m in df_practitioners.columns]
+
+    agg_dict = {m: ["mean", "median", "std", "count"] for m in available_metrics}
+
+    df_metrics = df_practitioners.groupby("faixa_idade").agg(agg_dict).reset_index()
+
+    # Flatten multi-level columns
+    df_metrics.columns = [
+        "_".join(col).strip("_") if col[1] else col[0] for col in df_metrics.columns.values
+    ]
+
+    print("\n✓ Análise de prática por idade concluída")
+    return df_rates, df_metrics
 
 
 def analyze_bpm_practitioners_vs_nonpractitioners(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
@@ -246,61 +226,50 @@ def analyze_bpm_practitioners_vs_nonpractitioners(df: pd.DataFrame) -> Tuple[pd.
         df: DataFrame com colunas [is_practitioner, bpm, faixa_idade]
     
     Returns:
-        Tuple contendo:
-        - DataFrame com médias globais por grupo
-        - DataFrame com médias segmentadas por faixa de idade
-        - Dict com testes estatísticos
+        Tupla (df_summary, stats_dict) com estatísticas e testes
     """
-    # Filtrar linhas válidas
-    df_valid = df[(df['bpm'].notna()) & (df['is_practitioner'].notna())].copy()
-    
-    # Análise global
-    global_results = []
-    for is_pract in [True, False]:
-        df_group = df_valid[df_valid['is_practitioner'] == is_pract]
-        bpm_data = df_group['bpm'].dropna()
-        
-        if len(bpm_data) > 0:
-            global_results.append({
-                'grupo': 'Praticante' if is_pract else 'Não Praticante',
-                'n': len(bpm_data),
-                'bpm_mean': bpm_data.mean(),
-                'bpm_median': bpm_data.median(),
-                'bpm_std': bpm_data.std(),
-                'bpm_min': bpm_data.min(),
-                'bpm_max': bpm_data.max()
-            })
-    
-    df_global = pd.DataFrame(global_results)
-    
-    # Análise por faixa de idade
-    age_order = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+']
-    df_valid['faixa_idade'] = pd.Categorical(df_valid['faixa_idade'], categories=age_order, ordered=True)
-    
-    age_results = []
-    for age_group in age_order:
-        df_age = df_valid[df_valid['faixa_idade'] == age_group]
-        
-        for is_pract in [True, False]:
-            df_group = df_age[df_age['is_practitioner'] == is_pract]
-            bpm_data = df_group['bpm'].dropna()
-            
-            if len(bpm_data) > 0:
-                age_results.append({
-                    'faixa_idade': age_group,
-                    'grupo': 'Praticante' if is_pract else 'Não Praticante',
-                    'n': len(bpm_data),
-                    'bpm_mean': bpm_data.mean(),
-                    'bpm_median': bpm_data.median(),
-                    'bpm_std': bpm_data.std()
-                })
-    
-    df_by_age = pd.DataFrame(age_results)
-    
-    # Testes estatísticos
-    practitioners = df_valid[df_valid['is_practitioner'] == True]['bpm'].dropna()
-    non_practitioners = df_valid[df_valid['is_practitioner'] == False]['bpm'].dropna()
-    
+    print("\n📊 ANÁLISE 4: BPM Praticantes vs Não Praticantes")
+    print("=" * 60)
+
+    if "bpm" not in df.columns:
+        print("⚠️  Coluna 'bpm' não encontrada")
+        return pd.DataFrame(), {}
+
+    # Filtrar apenas com BPM válido
+    df_with_bpm = df[df["bpm"].notna()].copy()
+    print(f"  Linhas com BPM válido: {len(df_with_bpm)}")
+
+    # Estatísticas gerais
+    summary_data = []
+
+    for is_pract_val in [False, True]:
+        df_group = df_with_bpm[df_with_bpm["is_practitioner"] == is_pract_val]
+        group_name = "Praticante" if is_pract_val else "Não Praticante"
+
+        bpm_values = df_group["bpm"].dropna()
+
+        if len(bpm_values) > 0:
+            summary_data.append(
+                {
+                    "grupo": group_name,
+                    "n": len(bpm_values),
+                    "bpm_mean": bpm_values.mean(),
+                    "bpm_median": bpm_values.median(),
+                    "bpm_std": bpm_values.std(),
+                    "bpm_min": bpm_values.min(),
+                    "bpm_max": bpm_values.max(),
+                }
+            )
+
+    df_summary = pd.DataFrame(summary_data)
+
+    print("\nEstatísticas gerais de BPM:")
+    print(df_summary)
+
+    # Teste estatístico
+    practitioners = df_with_bpm[df_with_bpm["is_practitioner"] == True]["bpm"].dropna()
+    non_practitioners = df_with_bpm[df_with_bpm["is_practitioner"] == False]["bpm"].dropna()
+
     stats_dict = {}
     
     if len(practitioners) > 0 and len(non_practitioners) > 0:

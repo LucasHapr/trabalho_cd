@@ -192,7 +192,76 @@ def plot_runners_comparison_histogram(
         barmode='overlay',
         opacity=0.7
     )
+
+    fig.update_layout(height=500)
+
+    return fig
+
+
+def plot_runners_comparison_histogram_seaborn(
+    df: pd.DataFrame, metric: str = "pace_min_km"
+) -> plt.Figure:
+    """
+    Histograma com KDE comparando runners vs não runners (Seaborn).
+
+    Args:
+        df: DataFrame processado
+        metric: Métrica a comparar
+
+    Returns:
+        Figura Matplotlib
+    """
+    df_plot = df[df[metric].notna()].copy()
+    df_plot["Status"] = df_plot["is_runner"].map({True: "Runner", False: "Não Runner"})
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    for status in df_plot["Status"].unique():
+        data = df_plot[df_plot["Status"] == status][metric]
+        sns.histplot(data, kde=True, label=status, alpha=0.5, ax=ax)
+
+    ax.set_title(
+        f"Distribuição de {metric}: Runners vs Não Runners", fontsize=14, fontweight="bold"
+    )
+    ax.set_xlabel(metric.replace("_", " ").title(), fontsize=12)
+    ax.set_ylabel("Frequência", fontsize=12)
+    ax.legend()
+
+    plt.tight_layout()
+    return fig
+
+
+# ============================================================================
+# ANÁLISE 3: Prática por Faixas de Idade
+# ============================================================================
+
+
+def plot_practice_by_age_bars_plotly(df_rates: pd.DataFrame) -> go.Figure:
+    """
+    Gráfico de barras com taxa de praticantes por faixa de idade (Plotly).
+
+    Args:
+        df_rates: DataFrame com taxas por faixa de idade
+
+    Returns:
+        Figura Plotly
+    """
+    fig = go.Figure()
     
+    # Converter para numérico e preencher NaN com 0
+    taxa_pct = pd.to_numeric(df_rates["taxa_praticantes_pct"], errors='coerce').fillna(0)
+    text_values = taxa_pct.round(1).astype(str) + "%"
+
+    fig.add_trace(
+        go.Bar(
+            x=df_rates["faixa_idade"],
+            y=taxa_pct,
+            marker_color=COLOR_PALETTE[0],
+            text=text_values,
+            textposition="outside",
+        )
+    )
+
     fig.update_layout(
         template='plotly_white',
         height=500
