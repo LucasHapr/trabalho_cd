@@ -542,10 +542,6 @@ def main():
     # Definir flags baseado na seleção
     use_wearable = dataset_option == "Dataset Wearable (JSON)"
     use_public = dataset_option == "Dataset Público (FitLife)"
-    
-    # Mostrar informação sobre o dataset selecionado
-    dataset_name = "runs_simulated.json" if use_wearable else "fitlife_clean.csv"
-    st.sidebar.markdown(f"**Dataset:** {dataset_name}")
 
     # Carregar dados
     with st.spinner("Carregando e processando dados..."):

@@ -188,7 +188,7 @@ trabalho_cd/
 │   │   ├── fitlife_clean.csv  # Dataset principal (687k linhas)
 │   │   └── README.md
 │   ├── processed/              # Dados processados
-│   └── runs_simulated.json     # Dataset wearable (25 linhas)
+│   └── runs.json               # Dataset wearable (25 linhas)
 │
 ├── reports/
 │   ├── analysis_results/       # CSVs com resultados (5 arquivos)

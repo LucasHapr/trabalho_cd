@@ -9,7 +9,7 @@ external:
 
 # Dataset wearable (JSON local)
 wearable:
-  path: "data/runs_simulated.json"
+  path: "data/runs.json"
   format: "json"
 
 # Dados processados
