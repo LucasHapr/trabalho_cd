@@ -30,4 +30,4 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "`nURL: http://localhost:8501" -ForegroundColor Green
 Write-Host "Pressione Ctrl+C para encerrar`n" -ForegroundColor Yellow
 
-streamlit run app_v2.py
+streamlit run app.py
